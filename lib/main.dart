@@ -8,6 +8,7 @@ import 'core/constants/app_routes.dart';
 
 import 'core/theme/app_theme.dart';
 
+import 'features/admin/controllers/admin_controller.dart';
 import 'features/admissions/controllers/application_controller.dart';
 import 'features/admissions/controllers/document_controller.dart';
 import 'features/auth/controllers/auth_controller.dart';
@@ -17,6 +18,10 @@ import 'features/auth/views/splash_screen.dart';
 import 'features/auth/views/login_screen.dart';
 import 'features/admissions/views/new_application_screen.dart';
 import 'features/dashboard/views/applicant_dashboard_screen.dart';
+import 'features/admin/views/admin_dashboard_screen.dart';
+import 'features/admin/views/applications_screen.dart';
+import 'features/admin/views/application_review_screen.dart';
+import 'features/admin/views/students_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,6 +49,7 @@ class MyApp extends StatelessWidget {
             ChangeNotifierProvider(
               create: (_) => ApplicantDashboardController(),
             ),
+            ChangeNotifierProvider(create: (_) => AdminController()),
           ],
           child: MaterialApp(
             title: AppConstants.appName,
@@ -55,6 +61,20 @@ class MyApp extends StatelessWidget {
               AppRoutes.login: (_) => const LoginScreen(),
               AppRoutes.newApplication: (_) => const NewApplicationScreen(),
               AppRoutes.applicantDashboard: (_) => const ApplicantDashboard(),
+              AppRoutes.adminDashboard: (_) => const AdminDashboardScreen(),
+              AppRoutes.applications: (_) => const ApplicationsScreen(),
+              AppRoutes.students: (_) => const StudentsScreen(),
+            },
+            onGenerateRoute: (settings) {
+              if (settings.name == AppRoutes.applicationReview) {
+                final applicationId = settings.arguments as String;
+                return MaterialPageRoute(
+                  builder: (_) => ApplicationReviewScreen(
+                    applicationId: applicationId,
+                  ),
+                );
+              }
+              return null;
             },
           ),
         );

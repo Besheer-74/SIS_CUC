@@ -101,7 +101,7 @@ class LoginScreen extends StatelessWidget {
 
                 Expanded(
                   child: Text(
-                    'Secure admission portal powered by City University Cairo.',
+                    'Secure admission portal powered by ORO Development.',
                     style: TextStyle(color: Colors.white70, fontSize: 14.sp),
                   ),
                 ),
@@ -176,18 +176,27 @@ class LoginScreen extends StatelessWidget {
                   if (!context.mounted) return;
 
                   if (success) {
-                    Navigator.pushReplacementNamed(
-                      context,
-                      AppRoutes.applicantDashboard,
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Email or password is incorrect. Please try again.',
+                    if (authController.currentProfile?.role == 'admin') {
+                      Navigator.pushReplacementNamed(
+                        context,
+                        AppRoutes.adminDashboard,
+                      );
+                      return;
+                    } else if (authController.currentProfile?.role ==
+                        'student') {
+                      Navigator.pushReplacementNamed(
+                        context,
+                        AppRoutes.applicantDashboard,
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Email or password is incorrect. Please try again.',
+                          ),
                         ),
-                      ),
-                    );
+                      );
+                    }
                   }
                 },
                 style: ElevatedButton.styleFrom(
