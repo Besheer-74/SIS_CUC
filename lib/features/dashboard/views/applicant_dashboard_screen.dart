@@ -1,0 +1,459 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart';
+
+import '../../../core/constants/app_colors.dart';
+
+import '../controllers/applicant_dashboard_controller.dart';
+
+import '../models/application_model.dart';
+
+import '../widgets/admission_comments_card.dart';
+import '../widgets/applicant_status_badge.dart';
+import '../widgets/application_timeline_card.dart';
+import '../widgets/approved_applicant_card.dart';
+import '../widgets/dashboard_info_card.dart';
+import '../widgets/dashboard_section_card.dart';
+import '../widgets/dashboard_sidebar.dart';
+import '../widgets/dashboard_two_column.dart';
+import '../widgets/uploaded_documents_card.dart';
+
+class ApplicantDashboard extends StatefulWidget {
+  const ApplicantDashboard({super.key});
+
+  @override
+  State<ApplicantDashboard> createState() => _ApplicantDashboardState();
+}
+
+class _ApplicantDashboardState extends State<ApplicantDashboard> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ApplicantDashboardController>().loadDashboard();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: Row(
+        children: [
+          const ApplicantSidebar(),
+          Expanded(
+            child: Consumer<ApplicantDashboardController>(
+              builder: (context, controller, child) {
+                final application = controller.application;
+                return Column(
+                  children: [
+                    _ApplicantTopBar(application: application!),
+                    if (controller.isLoading)
+                      const LinearProgressIndicator(minHeight: 2),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: EdgeInsets.all(32.w),
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(maxWidth: 1180.w),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (controller.errorMessage != null) ...[
+                                  _DashboardErrorBanner(
+                                    message: controller.errorMessage!,
+                                  ),
+                                  SizedBox(height: 20.h),
+                                ],
+                                _DashboardHeader(application: application),
+                                SizedBox(height: 24.h),
+                                _MetricGrid(
+                                  controller: controller,
+                                  application: application,
+                                ),
+                                SizedBox(height: 24.h),
+                                _StatusMessageCard(
+                                  controller: controller,
+                                  application: application,
+                                ),
+                                SizedBox(height: 24.h),
+                                DashboardTwoColumn(
+                                  left: ApplicationTimelineCard(
+                                    controller: controller,
+                                    application: application,
+                                  ),
+                                  right: _ApplicationDetailsCard(
+                                    controller: controller,
+                                    application: application,
+                                  ),
+                                ),
+                                SizedBox(height: 24.h),
+                                DashboardTwoColumn(
+                                  left: UploadedDocumentsCard(
+                                    controller: controller,
+                                  ),
+                                  right: AdmissionCommentsCard(
+                                    controller: controller,
+                                    application: application,
+                                  ),
+                                ),
+                                if (application.status ==
+                                    ApplicationStatus.approved) ...[
+                                  SizedBox(height: 24.h),
+                                  ApprovedApplicantCard(
+                                    controller: controller,
+                                    application: application,
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ApplicantTopBar extends StatelessWidget {
+  const _ApplicantTopBar({required this.application});
+
+  final ApplicationModel application;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 82.h,
+      padding: EdgeInsets.symmetric(horizontal: 32.w),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(bottom: BorderSide(color: AppColors.borderLight)),
+      ),
+      child: Row(
+        children: [
+          Text(
+            'Applicant Dashboard',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 22.sp,
+              fontWeight: FontWeight.w700,
+              height: 1.25,
+            ),
+          ),
+          const Spacer(),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceMuted,
+              borderRadius: BorderRadius.circular(8.r),
+              border: Border.all(color: AppColors.borderLight),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.person_outline_rounded,
+                  size: 18.sp,
+                  color: AppColors.primary,
+                ),
+                SizedBox(width: 8.w),
+                Text(
+                  application.fullNameEn,
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DashboardErrorBanner extends StatelessWidget {
+  const _DashboardErrorBanner({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(14.w),
+      decoration: BoxDecoration(
+        color: AppColors.warning.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.info_outline_rounded,
+            color: AppColors.warning,
+            size: 20.sp,
+          ),
+          SizedBox(width: 10.w),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 13.sp,
+                fontWeight: FontWeight.w600,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DashboardHeader extends StatelessWidget {
+  const _DashboardHeader({required this.application});
+
+  final ApplicationModel application;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Admission Application',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 28.sp,
+                  fontWeight: FontWeight.w700,
+                  height: 1.2,
+                ),
+              ),
+              SizedBox(height: 8.h),
+              Text(
+                'Track your submitted application, documents, review progress, and admission office comments.',
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 14.sp,
+                  height: 1.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+        ApplicantStatusBadge(status: application.status),
+      ],
+    );
+  }
+}
+
+class _MetricGrid extends StatelessWidget {
+  const _MetricGrid({required this.application, required this.controller});
+
+  final ApplicationModel application;
+  final ApplicantDashboardController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final cards = [
+      DashboardInfoCard(
+        title: 'Application Number',
+        value: application.applicationNumber,
+        icon: Icons.confirmation_number_outlined,
+      ),
+      DashboardInfoCard(
+        title: 'Application Status',
+        value: application.status.label,
+        icon: Icons.fact_check_outlined,
+        trailing: ApplicantStatusBadge(
+          status: application.status,
+          compact: true,
+        ),
+      ),
+      DashboardInfoCard(
+        title: 'Selected Faculty',
+        value: controller.facultyName,
+        icon: Icons.account_balance_outlined,
+      ),
+      DashboardInfoCard(
+        title: 'Submission Date',
+        value: application.createdAt.toLocal().toString().split(' ').first,
+        icon: Icons.calendar_month_outlined,
+      ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final spacing = 16.w;
+        final cardWidth = (constraints.maxWidth - spacing * 3) / 4;
+
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: cards
+              .map(
+                (card) => SizedBox(
+                  width: cardWidth.clamp(230.w, constraints.maxWidth),
+                  child: card,
+                ),
+              )
+              .toList(),
+        );
+      },
+    );
+  }
+}
+
+class _StatusMessageCard extends StatelessWidget {
+  const _StatusMessageCard({
+    required this.controller,
+    required this.application,
+  });
+
+  final ApplicationModel application;
+  final ApplicantDashboardController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    if (application.status == ApplicationStatus.approved) {
+      return ApprovedApplicantCard(
+        controller: controller,
+        application: application,
+      );
+    }
+
+    final isRejected = application.status == ApplicationStatus.rejected;
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(18.w),
+      decoration: BoxDecoration(
+        color: isRejected
+            ? AppColors.error.withValues(alpha: 0.08)
+            : AppColors.accent.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(
+          color: isRejected
+              ? AppColors.error.withValues(alpha: 0.24)
+              : AppColors.accent.withValues(alpha: 0.35),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            isRejected
+                ? Icons.error_outline_rounded
+                : Icons.info_outline_rounded,
+            color: isRejected ? AppColors.error : AppColors.primary,
+            size: 22.sp,
+          ),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Text(
+              application.reviewComment ?? application.status.message,
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 14.sp,
+                fontWeight: FontWeight.w500,
+                height: 1.45,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ApplicationDetailsCard extends StatelessWidget {
+  const _ApplicationDetailsCard({
+    required this.controller,
+    required this.application,
+  });
+
+  final ApplicationModel application;
+  final ApplicantDashboardController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return DashboardSectionCard(
+      title: 'Submitted Details',
+      child: Column(
+        children: [
+          _ReadOnlyRow(label: 'Applicant Name', value: application.fullNameEn),
+          _ReadOnlyRow(
+            label: 'Certificate Type',
+            value: controller.certificateTypeName,
+          ),
+          _ReadOnlyRow(
+            label: 'Specialization',
+            value: controller.specializationName,
+          ),
+          _ReadOnlyRow(
+            label: 'Selected Faculty',
+            value: controller.facultyName,
+          ),
+          _ReadOnlyRow(label: 'Email', value: application.email),
+          _ReadOnlyRow(label: 'Mobile', value: application.mobile),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReadOnlyRow extends StatelessWidget {
+  const _ReadOnlyRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 12.h),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 150.w,
+            child: Text(
+              label,
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 13.sp,
+                fontWeight: FontWeight.w600,
+                height: 1.4,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 13.sp,
+                fontWeight: FontWeight.w600,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
