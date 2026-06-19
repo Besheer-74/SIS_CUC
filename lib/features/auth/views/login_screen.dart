@@ -7,7 +7,10 @@ import '../../../core/constants/app_routes.dart';
 import '../controllers/auth_controller.dart';
 
 class LoginScreen extends StatelessWidget {
-  const LoginScreen({super.key});
+  LoginScreen({super.key});
+
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +19,15 @@ class LoginScreen extends StatelessWidget {
       body: Row(
         children: [
           Expanded(flex: 45, child: _brandSection()),
-          Expanded(flex: 55, child: _loginSection(context, authController)),
+          Expanded(
+            flex: 55,
+            child: _loginSection(
+              emailController,
+              passwordController,
+              context,
+              authController,
+            ),
+          ),
         ],
       ),
     );
@@ -115,9 +126,12 @@ class LoginScreen extends StatelessWidget {
     );
   }
 
-  Widget _loginSection(BuildContext context, AuthController authController) {
-    final emailController = TextEditingController();
-    final passwordController = TextEditingController();
+  Widget _loginSection(
+    TextEditingController emailController,
+    TextEditingController passwordController,
+    BuildContext context,
+    AuthController authController,
+  ) {
     return Center(
       child: Container(
         width: 420.w,

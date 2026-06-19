@@ -102,6 +102,8 @@ class _AdminSidebarState extends State<AdminSidebar> {
           _SidebarItem(
             icon: Icons.app_registration_rounded,
             label: 'Registration',
+            isActive: _activeRoute == AppRoutes.registration,
+            onTap: () => _navigateTo(AppRoutes.registration),
           ),
           const Spacer(),
           _SidebarItem(

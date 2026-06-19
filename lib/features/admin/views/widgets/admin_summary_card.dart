@@ -21,7 +21,7 @@ class AdminSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 160.h,
+      height: 190.h,
       padding: EdgeInsets.all(20.w),
       decoration: dashboardCardDecoration(),
       child: Column(

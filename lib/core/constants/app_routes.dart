@@ -16,4 +16,6 @@ class AppRoutes {
   static const String applicationReview = '/application-review';
 
   static const String students = '/students';
+
+  static const String registration = '/registration';
 }

@@ -4,20 +4,29 @@ import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_routes.dart';
+
 import '../controllers/admin_controller.dart';
+import '../controllers/course_controller.dart';
+
 import '../models/student_model.dart';
-import 'student_details_screen.dart';
+
+import 'register_course_screen.dart';
 import 'widgets/admin_sidebar.dart';
 
-class StudentsScreen extends StatefulWidget {
-  const StudentsScreen({super.key});
+class RegistrationManagementScreen extends StatefulWidget {
+  const RegistrationManagementScreen({super.key});
 
   @override
-  State<StudentsScreen> createState() => _StudentsScreenState();
+  State<RegistrationManagementScreen> createState() =>
+      _RegistrationManagementScreenState();
 }
 
-class _StudentsScreenState extends State<StudentsScreen> {
+class _RegistrationManagementScreenState
+    extends State<RegistrationManagementScreen> {
   late TextEditingController _searchController;
+  StudentModel? _selectedStudent;
+  Map<String, dynamic>? _studentDetails;
+  bool _loadingStudentDetails = false;
 
   @override
   void initState() {
@@ -35,66 +44,89 @@ class _StudentsScreenState extends State<StudentsScreen> {
     super.dispose();
   }
 
+  Future<void> _selectStudent(StudentModel student) async {
+    setState(() {
+      _selectedStudent = student;
+      _loadingStudentDetails = true;
+    });
+
+    final adminController = context.read<AdminController>();
+    final courseController = context.read<CourseController>();
+    final details = await adminController.getStudentDetails(student.id);
+    await courseController.loadFacultyCourses(student.facultyId ?? 0);
+    await courseController.loadStudentAvailableCourses(student.id);
+
+    setState(() {
+      _studentDetails = details;
+      _loadingStudentDetails = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final courseController = Provider.of<CourseController>(context);
+    final adminController = Provider.of<AdminController>(context);
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Row(
         children: [
-          const AdminSidebar(currentRoute: AppRoutes.students),
+          const AdminSidebar(currentRoute: AppRoutes.registration),
           Expanded(
-            child: Consumer<AdminController>(
-              builder: (context, controller, child) {
-                return Column(
-                  children: [
-                    _AdminTopBar(),
-                    if (controller.isLoading)
-                      const LinearProgressIndicator(minHeight: 2),
-                    Expanded(
-                      child: SingleChildScrollView(
-                        padding: EdgeInsets.all(32.w),
-                        child: Center(
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(maxWidth: 1180.w),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (controller.errorMessage != null) ...[
-                                  _ErrorBanner(
-                                    message: controller.errorMessage!,
-                                  ),
-                                  SizedBox(height: 20.h),
-                                ],
-                                _PageHeader(),
-                                SizedBox(height: 24.h),
-                                _SearchAndFilters(
-                                  controller: controller,
-                                  searchController: _searchController,
-                                ),
-                                SizedBox(height: 24.h),
-                                _StudentsTable(
-                                  controller: controller,
-                                  onViewStudent: (studentId, applicationId) {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => StudentDetailsScreen(
-                                          studentId: studentId,
-                                          applicationId: applicationId,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ],
+            child: Column(
+              children: [
+                _AdminTopBar(),
+                if (adminController.isLoading)
+                  const LinearProgressIndicator(minHeight: 2),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.all(32.w),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: 1180.w),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (adminController.errorMessage != null) ...[
+                              _ErrorBanner(
+                                message: adminController.errorMessage!,
+                              ),
+                              SizedBox(height: 20.h),
+                            ],
+                            _PageHeader(),
+                            SizedBox(height: 24.h),
+                            _SearchAndFilters(
+                              controller: adminController,
+                              searchController: _searchController,
                             ),
-                          ),
+                            SizedBox(height: 24.h),
+                            if (adminController.students.isEmpty)
+                              EmptyState()
+                            else if (_selectedStudent == null)
+                              _StudentsTable(
+                                controller: adminController,
+                                onSelectStudent: _selectStudent,
+                              )
+                            else
+                              RegistrationPanel(
+                                student: _selectedStudent!,
+                                studentDetails: _studentDetails,
+                                loadingDetails: _loadingStudentDetails,
+                                adminController: adminController,
+                                courseController: courseController,
+                                onBack: () {
+                                  setState(() {
+                                    _selectedStudent = null;
+                                    _studentDetails = null;
+                                  });
+                                },
+                              ),
+                          ],
                         ),
                       ),
                     ),
-                  ],
-                );
-              },
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -118,7 +150,7 @@ class _AdminTopBar extends StatelessWidget {
       child: Row(
         children: [
           Text(
-            'Students',
+            'Registration Management',
             style: TextStyle(
               color: AppColors.textPrimary,
               fontSize: 22.sp,
@@ -168,7 +200,7 @@ class _PageHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Students Management',
+          'Course Registration',
           style: TextStyle(
             color: AppColors.textPrimary,
             fontSize: 28.sp,
@@ -178,7 +210,7 @@ class _PageHeader extends StatelessWidget {
         ),
         SizedBox(height: 8.h),
         Text(
-          'View and manage all student records.',
+          'Enable or disable courses for students.',
           style: TextStyle(
             color: AppColors.textSecondary,
             fontSize: 14.sp,
@@ -337,10 +369,13 @@ class _SearchAndFilters extends StatelessWidget {
 }
 
 class _StudentsTable extends StatelessWidget {
-  const _StudentsTable({required this.controller, required this.onViewStudent});
+  const _StudentsTable({
+    required this.controller,
+    required this.onSelectStudent,
+  });
 
   final AdminController controller;
-  final Function(String, String) onViewStudent;
+  final Function(StudentModel) onSelectStudent;
 
   @override
   Widget build(BuildContext context) {
@@ -432,7 +467,7 @@ class _StudentsTable extends StatelessWidget {
               ),
               DataColumn(
                 label: Text(
-                  'Email',
+                  'Current Semester',
                   style: TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 12.sp,
@@ -475,20 +510,43 @@ class _StudentsTable extends StatelessWidget {
                           ),
                         ),
                       ),
-                      DataCell(_StudentNameCell(student: student)),
                       DataCell(
-                        _StudentFacultyCell(
-                          student: student,
-                          controller: controller,
+                        Text(
+                          controller.getStudentName(student.id),
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                       DataCell(
-                        _StudentMajorCell(
-                          student: student,
-                          controller: controller,
+                        Text(
+                          controller.getFacultyName(student.facultyId),
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12.sp,
+                          ),
                         ),
                       ),
-                      DataCell(_StudentEmailCell(student: student)),
+                      DataCell(
+                        Text(
+                          controller.getMajorName(student.majorId),
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12.sp,
+                          ),
+                        ),
+                      ),
+                      DataCell(
+                        Text(
+                          student.currentSemester.toString(),
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12.sp,
+                          ),
+                        ),
+                      ),
                       DataCell(
                         Container(
                           padding: EdgeInsets.symmetric(
@@ -516,12 +574,9 @@ class _StudentsTable extends StatelessWidget {
                         MouseRegion(
                           cursor: SystemMouseCursors.click,
                           child: GestureDetector(
-                            onTap: () => onViewStudent(
-                              student.id,
-                              student.applicationId,
-                            ),
+                            onTap: () => onSelectStudent(student),
                             child: Text(
-                              'View',
+                              'Select',
                               style: TextStyle(
                                 color: AppColors.primary,
                                 fontSize: 12.sp,
@@ -539,84 +594,6 @@ class _StudentsTable extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _StudentNameCell extends StatelessWidget {
-  const _StudentNameCell({required this.student});
-
-  final StudentModel student;
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<Map<String, dynamic>>(
-      future: context.read<AdminController>().getApplicationDetails(
-        student.applicationId,
-      ),
-      builder: (context, snapshot) {
-        final name = snapshot.data?['full_name_en'] ?? '-';
-        return Text(
-          name,
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: 12.sp,
-            fontWeight: FontWeight.w600,
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _StudentFacultyCell extends StatelessWidget {
-  const _StudentFacultyCell({required this.student, required this.controller});
-
-  final AdminController controller;
-  final StudentModel student;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      controller.getFacultyName(student.facultyId),
-      style: TextStyle(color: AppColors.textSecondary, fontSize: 12.sp),
-    );
-  }
-}
-
-class _StudentMajorCell extends StatelessWidget {
-  const _StudentMajorCell({required this.student, required this.controller});
-
-  final AdminController controller;
-  final StudentModel student;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      controller.getMajorName(student.majorId),
-      style: TextStyle(color: AppColors.textSecondary, fontSize: 12.sp),
-    );
-  }
-}
-
-class _StudentEmailCell extends StatelessWidget {
-  const _StudentEmailCell({required this.student});
-
-  final StudentModel student;
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<Map<String, dynamic>>(
-      future: context.read<AdminController>().getApplicationDetails(
-        student.applicationId,
-      ),
-      builder: (context, snapshot) {
-        final email = snapshot.data?['email'] ?? '-';
-        return Text(
-          email,
-          style: TextStyle(color: AppColors.textSecondary, fontSize: 12.sp),
-        );
-      },
     );
   }
 }

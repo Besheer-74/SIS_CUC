@@ -70,8 +70,8 @@ class ApplicantSidebar extends StatelessWidget {
             label: 'My Application',
           ),
           const _SidebarItem(
-            icon: Icons.folder_copy_outlined,
-            label: 'Documents',
+            icon: Icons.book_outlined,
+            label: 'Courses',
           ),
           const _SidebarItem(
             icon: Icons.mark_email_unread_outlined,

@@ -21,7 +21,7 @@ class DashboardInfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 136.h,
+      height: 140.h,
       padding: EdgeInsets.all(18.w),
       decoration: dashboardCardDecoration(),
       child: Column(

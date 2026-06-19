@@ -27,6 +27,10 @@ class AdminController extends ChangeNotifier {
   Map<String, dynamic> _studentDetails = {};
   Map<String, dynamic> get studentDetails => _studentDetails;
 
+  List<Map<String, dynamic>> _faculties = [];
+  List<Map<String, dynamic>> get faculties => _faculties;
+
+  final Map<String, String> _studentNameCache = {};
 
   final Map<int, String> _facultyNameCache = {};
   final Map<int, String> _certificateTypeNameCache = {};
@@ -53,6 +57,10 @@ class AdminController extends ChangeNotifier {
     return _majorNameCache[majorId] ?? '-';
   }
 
+  String getStudentName(String studentId) {
+    return _studentNameCache[studentId] ?? '-';
+  }
+
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
@@ -61,6 +69,9 @@ class AdminController extends ChangeNotifier {
 
   String _searchQuery = '';
   String get searchQuery => _searchQuery;
+
+  int? _selectedStudentFacultyId;
+  int? get selectedStudentFacultyId => _selectedStudentFacultyId;
 
   ApplicationStatus? _selectedStatus;
   ApplicationStatus? get selectedStatus => _selectedStatus;
@@ -106,10 +117,12 @@ class AdminController extends ChangeNotifier {
 
     for (final app in _applications) {
       if (app.facultyId != null) facultyIds.add(app.facultyId!);
-      if (app.certificateTypeId != null)
-        certTypeIds.add(app.certificateTypeId!);
-      if (app.certificateSpecializationId != null)
+      certTypeIds.add(app.certificateTypeId);
+
+      if (app.certificateSpecializationId != null) {
         specIds.add(app.certificateSpecializationId!);
+      }
+
       if (app.majorId != null) majorIds.add(app.majorId!);
     }
 
@@ -332,13 +345,22 @@ class AdminController extends ChangeNotifier {
     try {
       final rows = await SupabaseConfig.client
           .from('students')
-          .select()
+          .select('*, applications:application_id(full_name_en)')
           .order('created_at', ascending: false);
 
       _students = (rows as List<dynamic>)
           .cast<Map<String, dynamic>>()
           .map(StudentModel.fromJson)
           .toList();
+
+      _studentNameCache.clear();
+      for (final row in rows) {
+        final appData = row['applications'] as Map<String, dynamic>?;
+        if (appData != null) {
+          _studentNameCache[row['id']] =
+              appData['full_name_en'] as String? ?? '';
+        }
+      }
 
       _filteredStudents = _students;
     } catch (error) {
@@ -356,14 +378,26 @@ class AdminController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setStudentStatusFilter(int? facultyId) {
+    _selectedStudentFacultyId = facultyId;
+    _applyStudentFilters();
+    notifyListeners();
+  }
+
   void _applyStudentFilters() {
     _filteredStudents = _students.where((student) {
+      final studentName = _studentNameCache[student.id] ?? '';
       final matchesSearch =
           _searchQuery.isEmpty ||
           student.studentCode.toLowerCase().contains(
             _searchQuery.toLowerCase(),
-          );
-      return matchesSearch;
+          ) ||
+          studentName.toLowerCase().contains(_searchQuery.toLowerCase());
+      final matchesFaculty =
+          _selectedStudentFacultyId == null ||
+          student.facultyId == _selectedStudentFacultyId;
+
+      return matchesSearch && matchesFaculty;
     }).toList();
   }
 
@@ -399,6 +433,17 @@ class AdminController extends ChangeNotifier {
     } catch (error) {
       debugPrint('Get application details error: $error');
       return {};
+    }
+  }
+
+  Future<void> loadFaculties() async {
+    try {
+      final rows = await SupabaseConfig.client
+          .from('faculties')
+          .select('id, name');
+      _faculties = (rows as List<dynamic>).cast<Map<String, dynamic>>();
+    } catch (error) {
+      debugPrint('Load faculties error: $error');
     }
   }
 
