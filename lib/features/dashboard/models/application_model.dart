@@ -166,7 +166,7 @@ class ApplicationModel {
       majorId: json['major_id'],
       status: ApplicationStatus.fromString(json['status']?.toString() ?? ''),
       reviewComment: json['review_comment'],
-      reviewedBy: json['reviewed_by'],
+      reviewedBy: json['profiles']['full_name'],
       reviewedAt: json['reviewed_at'] == null
           ? null
           : DateTime.parse(json['reviewed_at']),

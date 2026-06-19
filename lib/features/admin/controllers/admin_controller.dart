@@ -67,6 +67,9 @@ class AdminController extends ChangeNotifier {
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
+  String? _successMessage;
+  String? get successMessage => _successMessage;
+
   String _searchQuery = '';
   String get searchQuery => _searchQuery;
 
@@ -417,6 +420,57 @@ class AdminController extends ChangeNotifier {
       debugPrint('Get student details error: $error');
       return {};
     }
+  }
+
+  Future<StudentModel?> updateStudentRegistrationSettings({
+    required String studentId,
+    required int currentSemester,
+    required int maxCreditHours,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    _successMessage = null;
+    notifyListeners();
+
+    try {
+      final row = await SupabaseConfig.client
+          .from('students')
+          .update({
+            'current_semester': currentSemester,
+            'max_credit_hours': maxCreditHours,
+          })
+          .eq('id', studentId)
+          .select()
+          .single();
+
+      final updatedStudent = StudentModel.fromJson(row);
+
+      _replaceStudent(updatedStudent);
+      _studentDetails = {
+        ..._studentDetails,
+        'current_semester': updatedStudent.currentSemester,
+        'max_credit_hours': updatedStudent.maxCreditHours,
+      };
+
+      _successMessage = 'Student registration settings updated successfully.';
+      return updatedStudent;
+    } catch (error) {
+      _errorMessage = 'Unable to update student registration settings.';
+      debugPrint('Update student registration settings error: $error');
+      return null;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  void _replaceStudent(StudentModel updatedStudent) {
+    _students = _students
+        .map(
+          (student) => student.id == updatedStudent.id ? updatedStudent : student,
+        )
+        .toList();
+    _applyStudentFilters();
   }
 
   Future<Map<String, dynamic>> getApplicationDetails(

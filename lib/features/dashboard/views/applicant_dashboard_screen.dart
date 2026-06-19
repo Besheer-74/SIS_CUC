@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_routes.dart';
 
 import '../controllers/applicant_dashboard_controller.dart';
 
@@ -45,9 +46,28 @@ class _ApplicantDashboardState extends State<ApplicantDashboard> {
             child: Consumer<ApplicantDashboardController>(
               builder: (context, controller, child) {
                 final application = controller.application;
+                if (application == null) {
+                  return Column(
+                    children: [
+                      const _ApplicantTopBar(),
+                      if (controller.isLoading)
+                        const LinearProgressIndicator(minHeight: 2),
+                      Expanded(
+                        child: Center(
+                          child: controller.errorMessage == null
+                              ? const CircularProgressIndicator()
+                              : _DashboardErrorBanner(
+                                  message: controller.errorMessage!,
+                                ),
+                        ),
+                      ),
+                    ],
+                  );
+                }
+
                 return Column(
                   children: [
-                    _ApplicantTopBar(application: application!),
+                    _ApplicantTopBar(application: application),
                     if (controller.isLoading)
                       const LinearProgressIndicator(minHeight: 2),
                     Expanded(
@@ -65,46 +85,17 @@ class _ApplicantDashboardState extends State<ApplicantDashboard> {
                                   ),
                                   SizedBox(height: 20.h),
                                 ],
-                                _DashboardHeader(application: application),
-                                SizedBox(height: 24.h),
-                                _MetricGrid(
-                                  controller: controller,
-                                  application: application,
-                                ),
-                                SizedBox(height: 24.h),
-                                _StatusMessageCard(
-                                  controller: controller,
-                                  application: application,
-                                ),
-                                SizedBox(height: 24.h),
-                                DashboardTwoColumn(
-                                  left: ApplicationTimelineCard(
-                                    controller: controller,
-                                    application: application,
-                                  ),
-                                  right: _ApplicationDetailsCard(
-                                    controller: controller,
-                                    application: application,
-                                  ),
-                                ),
-                                SizedBox(height: 24.h),
-                                DashboardTwoColumn(
-                                  left: UploadedDocumentsCard(
-                                    controller: controller,
-                                  ),
-                                  right: AdmissionCommentsCard(
-                                    controller: controller,
-                                    application: application,
-                                  ),
-                                ),
                                 if (application.status ==
-                                    ApplicationStatus.approved) ...[
-                                  SizedBox(height: 24.h),
-                                  ApprovedApplicantCard(
+                                    ApplicationStatus.approved)
+                                  _ApprovedStudentDashboard(
+                                    controller: controller,
+                                    application: application,
+                                  )
+                                else
+                                  _AdmissionTrackingDashboard(
                                     controller: controller,
                                     application: application,
                                   ),
-                                ],
                               ],
                             ),
                           ),
@@ -123,9 +114,9 @@ class _ApplicantDashboardState extends State<ApplicantDashboard> {
 }
 
 class _ApplicantTopBar extends StatelessWidget {
-  const _ApplicantTopBar({required this.application});
+  const _ApplicantTopBar({this.application});
 
-  final ApplicationModel application;
+  final ApplicationModel? application;
 
   @override
   Widget build(BuildContext context) {
@@ -164,7 +155,7 @@ class _ApplicantTopBar extends StatelessWidget {
                 ),
                 SizedBox(width: 8.w),
                 Text(
-                  application.fullNameEn,
+                  application?.fullNameEn ?? 'Student Portal',
                   style: TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 13.sp,
@@ -175,6 +166,309 @@ class _ApplicantTopBar extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _AdmissionTrackingDashboard extends StatelessWidget {
+  const _AdmissionTrackingDashboard({
+    required this.controller,
+    required this.application,
+  });
+
+  final ApplicantDashboardController controller;
+  final ApplicationModel application;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        _DashboardHeader(application: application),
+        SizedBox(height: 24.h),
+        _MetricGrid(controller: controller, application: application),
+        SizedBox(height: 24.h),
+        _StatusMessageCard(controller: controller, application: application),
+        SizedBox(height: 24.h),
+        DashboardTwoColumn(
+          left: ApplicationTimelineCard(
+            controller: controller,
+            application: application,
+          ),
+          right: _ApplicationDetailsCard(
+            controller: controller,
+            application: application,
+          ),
+        ),
+        SizedBox(height: 24.h),
+        DashboardTwoColumn(
+          left: UploadedDocumentsCard(controller: controller),
+          right: AdmissionCommentsCard(
+            controller: controller,
+            application: application,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ApprovedStudentDashboard extends StatelessWidget {
+  const _ApprovedStudentDashboard({
+    required this.controller,
+    required this.application,
+  });
+
+  final ApplicantDashboardController controller;
+  final ApplicationModel application;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _StudentDashboardHeader(application: application),
+        SizedBox(height: 24.h),
+        _StudentMetricGrid(controller: controller),
+        SizedBox(height: 24.h),
+        DashboardTwoColumn(
+          left: _AcademicSummaryCard(controller: controller),
+          right: _QuickActionsCard(),
+        ),
+        SizedBox(height: 24.h),
+        _AnnouncementsCard(),
+      ],
+    );
+  }
+}
+
+class _StudentDashboardHeader extends StatelessWidget {
+  const _StudentDashboardHeader({required this.application});
+
+  final ApplicationModel application;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Student Overview',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 28.sp,
+                  fontWeight: FontWeight.w700,
+                  height: 1.2,
+                ),
+              ),
+              SizedBox(height: 8.h),
+              Text(
+                'View your academic summary, registration status, schedule, and university updates.',
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 14.sp,
+                  height: 1.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+        ApplicantStatusBadge(status: application.status),
+      ],
+    );
+  }
+}
+
+class _StudentMetricGrid extends StatelessWidget {
+  const _StudentMetricGrid({required this.controller});
+
+  final ApplicantDashboardController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final student = controller.student;
+    final cards = [
+      DashboardInfoCard(
+        title: 'Student Code',
+        value: student?.studentCode ?? '-',
+        icon: Icons.badge_outlined,
+      ),
+      DashboardInfoCard(
+        title: 'Current Semester',
+        value: student?.currentSemester.toString() ?? '-',
+        icon: Icons.calendar_month_outlined,
+      ),
+      DashboardInfoCard(
+        title: 'Registered Courses Count',
+        value: controller.registeredCoursesCount.toString(),
+        icon: Icons.library_books_outlined,
+      ),
+      DashboardInfoCard(
+        title: 'Credit Hours Used / Maximum',
+        value:
+            '${controller.registeredCreditHours} / ${controller.maxCreditHours}',
+        icon: Icons.timelapse_outlined,
+      ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final spacing = 16.w;
+        final cardWidth = (constraints.maxWidth - spacing * 3) / 4;
+
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: cards
+              .map(
+                (card) => SizedBox(
+                  width: cardWidth.clamp(230.w, constraints.maxWidth),
+                  child: card,
+                ),
+              )
+              .toList(),
+        );
+      },
+    );
+  }
+}
+
+class _AcademicSummaryCard extends StatelessWidget {
+  const _AcademicSummaryCard({required this.controller});
+
+  final ApplicantDashboardController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return DashboardSectionCard(
+      title: 'Academic Summary',
+      child: Column(
+        children: [
+          _ReadOnlyRow(label: 'Faculty', value: controller.facultyName),
+          _ReadOnlyRow(label: 'Major', value: controller.majorName),
+          _ReadOnlyRow(
+            label: 'Student Status',
+            value: controller.student?.status ?? '-',
+          ),
+          _ReadOnlyRow(
+            label: 'Remaining Credit Hours',
+            value: controller.remainingCreditHours.toString(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _QuickActionsCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return DashboardSectionCard(
+      title: 'Quick Actions',
+      child: Column(
+        children: [
+          _QuickActionRow(
+            icon: Icons.app_registration_rounded,
+            title: 'Course Registration',
+            onTap: () => Navigator.pushReplacementNamed(
+              context,
+              AppRoutes.courseRegistration,
+            ),
+          ),
+          _QuickActionRow(
+            icon: Icons.calendar_month_outlined,
+            title: 'My Schedule',
+            onTap: () =>
+                Navigator.pushReplacementNamed(context, AppRoutes.mySchedule),
+          ),
+          _QuickActionRow(
+            icon: Icons.mark_email_unread_outlined,
+            title: 'Messages',
+            onTap: () {},
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _QuickActionRow extends StatelessWidget {
+  const _QuickActionRow({
+    required this.icon,
+    required this.title,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 10.h),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8.r),
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceMuted,
+            borderRadius: BorderRadius.circular(8.r),
+            border: Border.all(color: AppColors.borderLight),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: AppColors.primary, size: 20.sp),
+              SizedBox(width: 10.w),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.textSecondary,
+                size: 20.sp,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AnnouncementsCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return DashboardSectionCard(
+      title: 'Announcements',
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(14.w),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceMuted,
+          borderRadius: BorderRadius.circular(8.r),
+          border: Border.all(color: AppColors.borderLight),
+        ),
+        child: Text(
+          'No announcements available at the moment.',
+          style: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 13.sp,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ),
     );
   }

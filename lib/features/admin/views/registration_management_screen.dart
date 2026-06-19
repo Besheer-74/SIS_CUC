@@ -113,6 +113,9 @@ class _RegistrationManagementScreenState
                                 loadingDetails: _loadingStudentDetails,
                                 adminController: adminController,
                                 courseController: courseController,
+                                onStudentUpdated: (student) {
+                                  setState(() => _selectedStudent = student);
+                                },
                                 onBack: () {
                                   setState(() {
                                     _selectedStudent = null;

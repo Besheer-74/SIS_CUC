@@ -9,6 +9,7 @@ import '../models/application_model.dart';
 
 class ApprovedApplicantCard extends StatelessWidget {
   const ApprovedApplicantCard({
+    super.key,
     required this.controller,
     required this.application,
   });

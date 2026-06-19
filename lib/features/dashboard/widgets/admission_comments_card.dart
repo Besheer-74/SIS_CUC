@@ -11,6 +11,7 @@ import 'dashboard_section_card.dart';
 
 class AdmissionCommentsCard extends StatelessWidget {
   const AdmissionCommentsCard({
+    super.key,
     required this.application,
     required this.controller,
   });
@@ -24,7 +25,7 @@ class AdmissionCommentsCard extends StatelessWidget {
       child: controller.reviewLogs.isEmpty
           ? Column(
               children: [
-                _logsRow(
+                _LogsRow(
                   logs: ApplicationReviewLogModel(
                     id: '',
                     applicationId: '',
@@ -38,15 +39,15 @@ class AdmissionCommentsCard extends StatelessWidget {
             )
           : Column(
               children: controller.reviewLogs
-                  .map((logs) => _logsRow(logs: logs))
+                  .map((logs) => _LogsRow(logs: logs))
                   .toList(),
             ),
     );
   }
 }
 
-class _logsRow extends StatelessWidget {
-  const _logsRow({required this.logs});
+class _LogsRow extends StatelessWidget {
+  const _LogsRow({required this.logs});
 
   final ApplicationReviewLogModel logs;
 

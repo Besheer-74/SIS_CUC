@@ -34,4 +34,21 @@ class StudentModel {
       createdAt: DateTime.parse(json['created_at']),
     );
   }
+
+  StudentModel copyWith({
+    int? currentSemester,
+    int? maxCreditHours,
+  }) {
+    return StudentModel(
+      id: id,
+      studentCode: studentCode,
+      applicationId: applicationId,
+      facultyId: facultyId,
+      majorId: majorId,
+      currentSemester: currentSemester ?? this.currentSemester,
+      maxCreditHours: maxCreditHours ?? this.maxCreditHours,
+      status: status,
+      createdAt: createdAt,
+    );
+  }
 }

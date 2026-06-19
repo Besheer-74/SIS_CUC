@@ -11,7 +11,10 @@ import '../models/application_model.dart';
 import 'dashboard_section_card.dart';
 
 class UploadedDocumentsCard extends StatelessWidget {
-  const UploadedDocumentsCard({required this.controller});
+  const UploadedDocumentsCard({
+    super.key,
+    required this.controller,
+  });
 
   final ApplicantDashboardController controller;
 

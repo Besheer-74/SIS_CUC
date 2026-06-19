@@ -8,7 +8,12 @@ import '../../../core/constants/app_routes.dart';
 import '../../auth/controllers/auth_controller.dart';
 
 class ApplicantSidebar extends StatelessWidget {
-  const ApplicantSidebar({super.key});
+  const ApplicantSidebar({
+    super.key,
+    this.currentRoute = AppRoutes.applicantDashboard,
+  });
+
+  final String currentRoute;
 
   @override
   Widget build(BuildContext context) {
@@ -60,18 +65,41 @@ class ApplicantSidebar extends StatelessWidget {
             ],
           ),
           SizedBox(height: 36.h),
-          const _SidebarItem(
+          _SidebarItem(
             icon: Icons.dashboard_outlined,
             label: 'Dashboard',
-            isActive: true,
+            isActive: currentRoute == AppRoutes.applicantDashboard,
+            onTap: () => Navigator.pushReplacementNamed(
+              context,
+              AppRoutes.applicantDashboard,
+            ),
           ),
-          const _SidebarItem(
+          _SidebarItem(
             icon: Icons.article_outlined,
             label: 'My Application',
+            isActive: currentRoute == AppRoutes.myApplication,
+            onTap: () => Navigator.pushReplacementNamed(
+              context,
+              AppRoutes.myApplication,
+            ),
           ),
-          const _SidebarItem(
+          _SidebarItem(
             icon: Icons.book_outlined,
-            label: 'Courses',
+            label: 'Course Registration',
+            isActive: currentRoute == AppRoutes.courseRegistration,
+            onTap: () => Navigator.pushReplacementNamed(
+              context,
+              AppRoutes.courseRegistration,
+            ),
+          ),
+          _SidebarItem(
+            icon: Icons.calendar_month_outlined,
+            label: 'My Schedule',
+            isActive: currentRoute == AppRoutes.mySchedule,
+            onTap: () => Navigator.pushReplacementNamed(
+              context,
+              AppRoutes.mySchedule,
+            ),
           ),
           const _SidebarItem(
             icon: Icons.mark_email_unread_outlined,

@@ -3,7 +3,11 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 
 class DashboardTwoColumn extends StatelessWidget {
-  const DashboardTwoColumn({required this.left, required this.right});
+  const DashboardTwoColumn({
+    super.key,
+    required this.left,
+    required this.right,
+  });
 
   final Widget left;
   final Widget right;

@@ -7,6 +7,8 @@ class AppRoutes {
 
   static const String applicantDashboard = '/applicant-dashboard';
 
+  static const String myApplication = '/my-application';
+
   static const String newApplication = '/new-application';
 
   static const String adminDashboard = '/admin-dashboard';
@@ -18,4 +20,8 @@ class AppRoutes {
   static const String students = '/students';
 
   static const String registration = '/registration';
+
+  static const String courseRegistration = '/course-registration';
+
+  static const String mySchedule = '/my-schedule';
 }
