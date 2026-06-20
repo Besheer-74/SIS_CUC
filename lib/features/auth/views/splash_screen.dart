@@ -65,14 +65,3 @@ class _SplashScreenState extends State<SplashScreen> {
     );
   }
 }
-
-// final appController = Provider.of<ApplicationController>(
-//   context,
-//   listen: false,
-// );
-// if (await appController.hasApplication()) {
-//   // Navigator.pushReplacementNamed(context, AppRoutes.applicantDashboard);
-//   print("Navigate to Applicant Dashboard (to be implemented)");
-// } else {
-//   Navigator.pushReplacementNamed(context, AppRoutes.newApplication);
-// }
