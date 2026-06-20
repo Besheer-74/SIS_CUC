@@ -91,7 +91,7 @@ class AdminController extends ChangeNotifier {
     try {
       final rows = await SupabaseConfig.client
           .from('applications')
-          .select()
+          .select("*,profiles(full_name)'")
           .order('created_at', ascending: false);
 
       _applications = (rows as List<dynamic>)
@@ -467,7 +467,8 @@ class AdminController extends ChangeNotifier {
   void _replaceStudent(StudentModel updatedStudent) {
     _students = _students
         .map(
-          (student) => student.id == updatedStudent.id ? updatedStudent : student,
+          (student) =>
+              student.id == updatedStudent.id ? updatedStudent : student,
         )
         .toList();
     _applyStudentFilters();
