@@ -109,25 +109,33 @@ class DocumentController extends ChangeNotifier {
     }
 
     final fileName = '${DateTime.now().millisecondsSinceEpoch}_${file.name}';
-    final filePath = SupabaseConfig.client.storage
-        .from('application_documents')
-        .getPublicUrl(fileName);
+
+    // Storage path inside the bucket
+    final storagePath = 'applications/$applicationId/$documentType/$fileName';
+
     final mimeType = _contentTypeFor(fileName);
 
+    // Upload file
     await SupabaseConfig.client.storage
         .from('application_documents')
         .uploadBinary(
-          filePath,
+          storagePath,
           Uint8List.fromList(bytes),
           fileOptions: FileOptions(contentType: mimeType),
         );
 
+    // Generate public URL
+    final publicUrl = SupabaseConfig.client.storage
+        .from('application_documents')
+        .getPublicUrl(storagePath);
+
+    // Save document information
     final response = await SupabaseConfig.client
         .from('application_documents')
         .insert({
           'application_id': applicationId,
           'document_type': documentType,
-          'file_path': filePath,
+          'file_path': publicUrl, // or storagePath if you prefer
           'file_name': file.name,
           'mime_type': mimeType,
         })
