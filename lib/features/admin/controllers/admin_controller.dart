@@ -91,7 +91,7 @@ class AdminController extends ChangeNotifier {
     try {
       final rows = await SupabaseConfig.client
           .from('applications')
-          .select("*,profiles(full_name)'")
+          .select('*,profiles(full_name)')
           .order('created_at', ascending: false);
 
       _applications = (rows as List<dynamic>)
